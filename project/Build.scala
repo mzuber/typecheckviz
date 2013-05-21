@@ -4,7 +4,7 @@ import play.Project._
 
 object ApplicationBuild extends Build {
 
-  val appName         = "typecheckplay"
+  val appName         = "typecheckviz"
   val appVersion      = "1.0-SNAPSHOT"
   val buildScalaVersion = "2.10.1"
 
