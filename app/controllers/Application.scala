@@ -23,7 +23,7 @@ import example._
   */
 object Application extends Controller with ExampleTypeChecker {
 
- this: ScanConstraintSolver with TraceableTypeChecker =>
+ this: TraceableConstraintSolver with TraceableTypeChecker =>
 
   def eval = Action {
     request =>
@@ -35,7 +35,7 @@ object Application extends Controller with ExampleTypeChecker {
             val judgement = Judgement(context, t, TypeVariable())
             typeDerivation(judgement).fold(
               {e => BadRequest("Error in type derivation:" + e.toString)},
-              {s => val irs = scanSolveConstraints(flatten(s))
+              {s => val irs = traceSolver(flatten(s))
                     Ok(toJson(Map("tree" -> treeToJson(s),
 				  "solverSteps" -> toJson(irs.map(IntermediateResultToJson(_))))))}
             )
@@ -49,10 +49,10 @@ object Application extends Controller with ExampleTypeChecker {
   }
 
   def IntermediateResultToJson(ir: IntermediateResult) : JsValue = {
-    toJson(Map("current" -> toJson(ir.current.toString),
-      "result" -> ir.result.fold({x=>toJson(x.toString)},{x=>mapToJson(x.sub)}),
-      "unsolved" -> toJson(ir.unsolved.map(x=>toJson(x.toString))),
-      "substitution" -> ir.sub.fold({x=>toJson(x.toString)},{x=>mapToJson(x.sub)})))
+    toJson(Map("current" -> toJson(ir.constraint.toString),
+	       "result" -> ir.result.fold({x => toJson(x.toString)}, {x => mapToJson(x.sub)}),
+	       "unsolved" -> toJson(ir.remainingConstraints.map(x => toJson(x.toString))),
+	       "substitution" -> mapToJson(ir.substitution.sub)))
   }
 
   def mapToJson[A,B](m: Map[A,B]) =  JsObject(m.map({
@@ -62,10 +62,10 @@ object Application extends Controller with ExampleTypeChecker {
   def treeToJson(c: ConstraintTree): JsValue = {
 
     Json.toJson(Map("rulename" -> toJson(c.rule.name),
-      "conclusion" -> toJson("Γ ⊢ " + c.rule.conclusion.expr + " : " + c.rule.conclusion.ty),
-      "context" -> mapToJson(c.rule.conclusion.ctx.ctx), 
-      "constraints" -> toJson(c.rule.constraints.map(x=>toJson(x.toString))),
-      "premises" -> toJson(c.children.map(treeToJson(_)))))
+		    "conclusion" -> toJson("Γ ⊢ " + c.rule.conclusion.expr + " : " + c.rule.conclusion.ty),
+		    "context" -> mapToJson(c.rule.conclusion.ctx.ctx), 
+		    "constraints" -> toJson(c.rule.constraints.map(x=>toJson(x.toString))),
+		    "premises" -> toJson(c.children.map(treeToJson(_)))))
   }
 
 }
@@ -76,7 +76,7 @@ object Application extends Controller with ExampleTypeChecker {
   */
 trait TraceableTypeChecker extends TypeChecker {
 
-  this: ConstraintGeneration with TreeTraversal with ScanConstraintSolver =>
+  this: ConstraintGeneration with TreeTraversal with TraceableConstraintSolver =>
 
   /**
     * Parse an expression.

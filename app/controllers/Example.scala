@@ -13,7 +13,7 @@ import scala.util.parsing.combinator.Parsers
 import scala.util.parsing.combinator.RegexParsers
 
 
-trait ExampleTypeChecker extends TraceableTypeChecker with LinearScanConstraintSolver with ReflectionBasedConstraintGeneration with DepthFirstPreOrder {
+trait ExampleTypeChecker extends TraceableTypeChecker with ReflectionBasedConstraintGeneration with DepthFirstPreOrder with TraceableLinearConstraintSolver {
   import SimpleTypes._
   import scala.reflect.runtime.universe.typeOf
 
