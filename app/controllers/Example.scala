@@ -1,62 +1,71 @@
 package example
 
+import controllers._ 
+
 import typechecklib.Syntax.Ide
 import typechecklib.Rules._
 import typechecklib.Types._
 import typechecklib.Constraints._
-import typechecklib.Constraints._
 import typechecklib._
-import ExampleRules._
-import controllers._ 
+
 import scala.util.parsing.combinator.syntactical.StandardTokenParsers
 import scala.util.parsing.combinator.Parsers
 import scala.util.parsing.combinator.RegexParsers
-import scala.reflect.runtime.universe.typeOf
 
-trait ExampleVisuTypeChecker extends VisualisationTypeChecker with LinearScanConstraintSolver with ReflectionBasedConstraintGeneration with DepthFirstPreOrder
-{
-  val rules = List(typeOf[VarRule], typeOf[AbsRule], typeOf[AppRule])
-  val context = ExampleRules.context
-  def parse(in: String) : Either[String,Term] = ExampleParser.parse(in)
 
-  object ExampleParser extends RegexParsers {
-    def parse(in: String): Either[String, Term] = parseAll(term, in) match {
-      case Success(result, _) => Right(result)
-      case failure: NoSuccess => Left(failure.msg)
-    }
-    def parseVar: Parser[Var] = """[a-z][a-zA-Z0-9]*""".r ^^ { case s: String => Var(s) }
-    def parseConst: Parser[Const] = """\d+""".r ^^ { case d => Const(d.toInt) }
-    def parseLet: Parser[Abs] = """\\""".r ~> parseVar ~ "." ~ term ^^ { case v ~ _ ~ t => Abs(v, t) }
+trait ExampleTypeChecker extends TraceableTypeChecker with LinearScanConstraintSolver with ReflectionBasedConstraintGeneration with DepthFirstPreOrder {
+  import SimpleTypes._
+  import scala.reflect.runtime.universe.typeOf
 
-    def simpleterm: Parser[Term] = parseConst | parseVar | "(" ~> term <~ ")" |parseLet
-    def term: Parser[Term] = chainl1(simpleterm, simpleterm, success(()) ^^ (_ => ((x: Term, y: Term) => App(x, y))))
-  }
-}
+  /**
+    * List of type rules.
+    */
+  val rules = List(typeOf[AbsRule], typeOf[VarRule], typeOf[AppRule], typeOf[ConstRule])
 
-object ExampleRules {
-
-  /*
-   * Some built-in functions on integers and booleans.
-   */
+  /**
+    * Some built-in functions on integers and booleans.
+    */
   val context = {
     val int = BaseType("int")
     val bool = BaseType("bool")
 
     new Context(Var("+") -> (int --> (int --> int)),
-      Var("-") -> (int --> (int --> int)),
-      Var("*") -> (int --> (int --> int)),
-      Var("/") -> (int --> (int --> int)),
-      Var("<") -> (int --> (int --> bool)),
-      Var(">") -> (int --> (int --> bool)),
-      Var("=") -> (int --> (int --> bool)),
-      Var("true") -> bool,
-      Var("false") -> bool)
+		Var("-") -> (int --> (int --> int)),
+		Var("*") -> (int --> (int --> int)),
+		Var("/") -> (int --> (int --> int)),
+		Var("<") -> (int --> (int --> bool)),
+		Var(">") -> (int --> (int --> bool)),
+		Var("=") -> (int --> (int --> bool)),
+		Var("true") -> bool,
+		Var("false") -> bool)
   }
 
-  /*
-   * Type rules for test cases.
-   */
-  val rules = List(typeOf[AbsRule], typeOf[VarRule], typeOf[AppRule], typeOf[ConstRule])
+  /**
+    * Expression parser.
+    */
+  def parse(in: String): Either[String, Term] = ExampleParser.parse(in)
+
+  object ExampleParser extends RegexParsers {
+
+    def parse(in: String): Either[String, Term] = parseAll(term, in) match {
+      case Success(result, _) => Right(result)
+      case failure: NoSuccess => Left(failure.msg)
+    }
+
+    def parseVar: Parser[Var] = """[a-z][a-zA-Z0-9]*""".r ^^ { case s: String => Var(s) }
+    def parseConst: Parser[Const] = """\d+""".r ^^ { case d => Const(d.toInt) }
+    def parseAbs: Parser[Abs] = """\\""".r ~> parseVar ~ "." ~ term ^^ { case v ~ _ ~ t => Abs(v, t) }
+
+    def simpleterm: Parser[Term] = parseConst | parseVar | "(" ~> term <~ ")" | parseAbs
+    def term: Parser[Term] = chainl1(simpleterm, simpleterm, success(()) ^^ (_ => ((x: Term, y: Term) => App(x, y))))
+  }
+}
+
+
+/**
+  * A simply typed lambda calculus extended with constants.
+  */
+object SimpleTypes {
 
   /* Abstract Syntax */
   abstract class Term
@@ -64,10 +73,10 @@ object ExampleRules {
     override def toString = ide.toString
   }
   case class Abs(x: Var, e: Term) extends Term {
-    override def toString = "(λ" + x + "." + e + ")"
+    override def toString = "(λ " + x + ". " + e + ")"
   }
   case class App(f: Term, e: Term) extends Term {
-    override def toString = f.toString + " " + e.toString
+    override def toString = f + " " + e
   }
   case class Const(n: Int) extends Term {
     override def toString = n.toString
@@ -133,7 +142,7 @@ object ExampleRules {
 
     Nil ==> ctx ⊢ n <:> t | t =:= BaseType("int")
 
-    override val name = "const"
+    override val name = "Const"
   }
 
 }

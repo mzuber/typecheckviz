@@ -6,22 +6,24 @@ import play.api.data.Forms._
 import play.api.mvc._
 import play.api.libs.json._
 import play.api.libs.json.Json._
-import scala.reflect.runtime.universe.typeOf
 
 import typechecklib.Syntax.Ide
 import typechecklib.Rules._
 import typechecklib.Types._
 import typechecklib.Constraints._
-import typechecklib.Constraints._
 import typechecklib._
-import example._
-import scala.util.parsing.combinator.syntactical.StandardTokenParsers
-import scala.util.parsing.combinator.Parsers
-import scala.util.parsing.combinator.RegexParsers
-import scala.reflect.runtime.universe.typeOf
 
-object Application extends Controller with ExampleVisuTypeChecker {
- this : ScanConstraintSolver with VisualisationTypeChecker =>
+import example._
+
+
+/**
+  * The type checker application.
+  *
+  * Extend this object with your implementation of the 'TraceableTypeChecker' trait.
+  */
+object Application extends Controller with ExampleTypeChecker {
+
+ this: ScanConstraintSolver with TraceableTypeChecker =>
 
   def eval = Action {
     request =>
@@ -32,18 +34,14 @@ object Application extends Controller with ExampleVisuTypeChecker {
           case Right(t) =>
             val judgement = Judgement(context, t, TypeVariable())
             typeDerivation(judgement).fold(
-              {e =>
-                BadRequest("Error in type derivation:" +e.toString)},
-              {s => 
-                val irs = scanSolveConstraints(flatten(s))
-                Ok(toJson(Map("tree" ->treeToJson(s),
-                  "solverSteps" -> toJson(irs.map(IntermediateResultToJson(_))))))}
+              {e => BadRequest("Error in type derivation:" + e.toString)},
+              {s => val irs = scanSolveConstraints(flatten(s))
+                    Ok(toJson(Map("tree" -> treeToJson(s),
+				  "solverSteps" -> toJson(irs.map(IntermediateResultToJson(_))))))}
             )
           case Left(s) => BadRequest(s)
         }
-      }.getOrElse {
-        BadRequest("Expecting text/plain request body")
-      }
+      }.getOrElse(BadRequest("Expecting text/plain request body"))
   }
 
   def index = Action {
@@ -64,7 +62,7 @@ object Application extends Controller with ExampleVisuTypeChecker {
   def treeToJson(c: ConstraintTree): JsValue = {
 
     Json.toJson(Map("rulename" -> toJson(c.rule.name),
-      "conclusion" -> toJson("Γ⊢" + c.rule.conclusion.expr + "<:>" + c.rule.conclusion.ty),
+      "conclusion" -> toJson("Γ ⊢ " + c.rule.conclusion.expr + " : " + c.rule.conclusion.ty),
       "context" -> mapToJson(c.rule.conclusion.ctx.ctx), 
       "constraints" -> toJson(c.rule.constraints.map(x=>toJson(x.toString))),
       "premises" -> toJson(c.children.map(treeToJson(_)))))
@@ -72,10 +70,21 @@ object Application extends Controller with ExampleVisuTypeChecker {
 
 }
 
-trait VisualisationTypeChecker extends TypeChecker
-{
- this: ScanConstraintSolver with TreeTraversal with ConstraintGeneration =>
- def parse(in: String): Either[String, Any]
- val context : Context
-}
 
+/**
+  * A trait for visualizable type checkers.
+  */
+trait TraceableTypeChecker extends TypeChecker {
+
+  this: ConstraintGeneration with TreeTraversal with ScanConstraintSolver =>
+
+  /**
+    * Parse an expression.
+    */
+  def parse(in: String): Either[String, Any]
+
+  /**
+    * Initial context for the type checker.
+    */
+  val context: Context
+}
