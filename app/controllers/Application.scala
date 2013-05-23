@@ -32,12 +32,17 @@ object Application extends Controller with ExampleTypeChecker {
       textBody.map { text =>
         parse(text) match {
           case Right(t) =>
-            val judgement = Judgement(context, t, TypeVariable())
+            val tv = TypeVariable()
+            val judgement = Judgement(context, t, tv)
             typeDerivation(judgement).fold(
               {e => BadRequest("Error in type derivation:" + e.toString)},
               {s => val irs = traceSolver(flatten(s))
+                    val res = computeType(context,t).fold(l =>
+                      "error"->toJson(l.toString), r=>"result" -> toJson(r.toString))
                     Ok(toJson(Map("tree" -> treeToJson(s),
-				  "solverSteps" -> toJson(irs.map(IntermediateResultToJson(_))))))}
+				  "solverSteps" -> toJson(irs.map(IntermediateResultToJson(_))),
+                                   res
+                    )))}
             )
           case Left(s) => BadRequest(s)
         }
@@ -63,6 +68,8 @@ object Application extends Controller with ExampleTypeChecker {
 
     Json.toJson(Map("rulename" -> toJson(c.rule.name),
 		    "conclusion" -> toJson("Γ ⊢ " + c.rule.conclusion.expr + " : " + c.rule.conclusion.ty),
+                    "conclusionExpr" -> toJson(c.rule.conclusion.expr.toString),
+                    "conclusionTy" -> toJson(c.rule.conclusion.ty.toString),
 		    "context" -> mapToJson(c.rule.conclusion.ctx.ctx), 
 		    "constraints" -> toJson(c.rule.constraints.map(x=>toJson(x.toString))),
 		    "premises" -> toJson(c.children.map(treeToJson(_)))))

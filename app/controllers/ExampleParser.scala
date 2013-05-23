@@ -37,7 +37,7 @@ object ExampleParser extends RegexParsers {
   def reservedOpsRegex: Parser[String] = """(\+s)|[\+\-\*><]|/|<=|==|/=|>=""".r ^^ { case s: String => s }
   def binopRegex: Parser[Var] = reservedOpsRegex ^^ { s => Var(s) }
   //Shunting-yard algorithm
-  def binop: Parser[Term] = simpleterm ~ rep(binopRegex ~ simpleterm) ^^ {
+  def binop: Parser[Term] = simpleexpr ~ rep(binopRegex ~ simpleexpr) ^^ {
     case x ~ xs =>
       var input = new Queue ++= (x :: (xs.flatMap({ case a ~ b => List(a, b) }))) //TODO
       val out: Stack[Term] = new Stack
