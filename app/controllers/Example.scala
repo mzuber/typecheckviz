@@ -45,20 +45,6 @@ trait ExampleTypeChecker extends TraceableTypeChecker with ReflectionBasedConstr
     */
   def parse(in: String): Either[String, Term] = ExampleParser.parse(in)
 
-  object ExampleParser extends RegexParsers {
-
-    def parse(in: String): Either[String, Term] = parseAll(term, in) match {
-      case Success(result, _) => Right(result)
-      case failure: NoSuccess => Left(failure.msg)
-    }
-
-    def parseVar: Parser[Var] = """[a-z][a-zA-Z0-9]*""".r ^^ { case s: String => Var(s) }
-    def parseConst: Parser[Const] = """\d+""".r ^^ { case d => Const(d.toInt) }
-    def parseAbs: Parser[Abs] = """\\""".r ~> parseVar ~ "." ~ term ^^ { case v ~ _ ~ t => Abs(v, t) }
-
-    def simpleterm: Parser[Term] = parseConst | parseVar | "(" ~> term <~ ")" | parseAbs
-    def term: Parser[Term] = chainl1(simpleterm, simpleterm, success(()) ^^ (_ => ((x: Term, y: Term) => App(x, y))))
-  }
 }
 
 
@@ -69,7 +55,7 @@ object SimpleTypes {
 
   /* Abstract Syntax */
   abstract class Term
-  case class Var(ide: Ide) extends Term {
+  case class Var(ide: String) extends Term {
     override def toString = ide.toString
   }
   case class Abs(x: Var, e: Term) extends Term {
