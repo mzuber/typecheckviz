@@ -78,24 +78,23 @@
         <div class="span3">
           <form id="form">
 	    <fieldset>
-	      <legend>Query</legend>
-	      <label>Text</label>
-	      <textarea cols="50" id="eval"></textarea>
+	      <legend>Program</legend>
+	      <textarea cols="50" rows="10" id="eval"></textarea>
 	      
 	      <span class="help-block">Enter an expression here.</span>
 
-	      <button type="submit" class="btn">Submit</button>
+	      <button type="submit" class="btn">Type check</button>
 	    </fieldset>
 	  </form> 
 	</div>
 	<div class="span9">
-	  <legend>Query Result</legend>
+	  <legend>Type check result</legend>
           <div id="result"> </div>
           <div id="error" class="alert hide"> </div>
           <div id="content">
             <ul id="tabs" class="nav nav-tabs" data-tabs="tabs">
-              <li class="active"><a href="#tree-tab" data-toggle="tab">Tree</a></li>
-              <li><a href="#solver-tab" data-toggle="tab">Solver</a></li>
+              <li class="active"><a href="#tree-tab" data-toggle="tab">Derivation Tree</a></li>
+              <li><a href="#solver-tab" data-toggle="tab">Constraint Solver</a></li>
             </ul>
             <div id="my-tab-content" class="tab-content">
               <div class="tab-pane active" id="tree-tab">

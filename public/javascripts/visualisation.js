@@ -61,7 +61,7 @@ function displayResult(expr, d){
 }
 function showResult(expr, r){
     $("#error").hide()
-    $("#result").html('<pre><b>Result</b> for Expression '+expr+' : <br>'+r+'</pre>').show()
+    $("#result").html('<pre><b>Result type:</b> ' + r +'</pre>').show()
 }
 
 function showError(expr,e){
@@ -106,7 +106,7 @@ function displayCarousel(irs)
         var divC = $('<div>').attr('id','unsolved-'+i)
         divC.addClass('unsolved step')
         if(i!=0) { divC.hide()}
-        divC.append('<b>Unsolved:</b>')
+        divC.append('<b>Remaining Constraints:</b>')
         divC.append(unsolved)
         $('#unsolved').append(divC)
         
