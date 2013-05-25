@@ -1,3 +1,34 @@
+/*
+ * Copyright (c) 2013, Fabian Linges and Martin Zuber
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ * - Redistributions of source code must retain the above copyright
+ *   notice, this list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above
+ *   copyright notice, this list of conditions and the following
+ *   disclaimer in the documentation and/or other materials provided
+ *   with the distribution.
+ * - Neither the name of the TU Berlin nor the names of its
+ *   contributors may be used to endorse or promote products derived
+ *   from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package example
 
 import controllers._ 
@@ -54,19 +85,25 @@ trait ExampleTypeChecker extends TraceableTypeChecker with ReflectionBasedConstr
 object SimpleTypes {
 
   /* Abstract Syntax */
-  abstract class Term
-  case class Var(ide: String) extends Term {
-    override def toString = ide.toString
+  sealed abstract class Term {
+    override def toString = this match {
+      case Var(ide)  => ide.toString
+      case Const(n)  => n.toString
+      case Abs(x, e) => "λ " + x + ". " + e + ""
+      case App(App(Var("+"), f), e) => "(" + f + " + " + e + ")"
+      case App(App(Var("-"), f), e) => "(" + f + " - " + e + ")"
+      case App(App(Var("*"), f), e) => "(" + f + " * " + e + ")"
+      case App(App(Var("/"), f), e) => "(" + f + " / " + e + ")"
+      case App(App(Var(">"), f), e) => "(" + f + " > " + e + ")"
+      case App(App(Var("="), f), e) => "(" + f + " = " + e + ")"
+      case App(App(Var("<"), f), e) => "(" + f + " < " + e + ")"
+      case App(f, e) => "(" + f + ") " + e
+    }
   }
-  case class Abs(x: Var, e: Term) extends Term {
-    override def toString = "(λ " + x + ". " + e + ")"
-  }
-  case class App(f: Term, e: Term) extends Term {
-    override def toString = f + " " + e
-  }
-  case class Const(n: Int) extends Term {
-    override def toString = n.toString
-  }
+  case class Var(ide: String) extends Term
+  case class Abs(x: Var, e: Term) extends Term
+  case class App(f: Term, e: Term) extends Term
+  case class Const(n: Int) extends Term
 
   /*
    * Typing rule for variable lookup:
@@ -77,7 +114,13 @@ object SimpleTypes {
    */
   case class VarRule(ctx: Context, x: Var, t: Type) extends Rule {
 
-    Nil ==> ctx ⊢ x <:> t | t =:= ctx(x)
+    case object VarError extends ErrorMessage {
+      def message = if (ctx contains x)
+		      "Type missmatch: Couldn't match expected type " + quote(t) + " against inferred type " + quote(ctx(x))
+		    else "Undefined variable: " + quote(x)
+    }
+
+    Nil ==> ctx ⊢ x <:> t | (t =:= ctx(x) | VarError)
 
     override val name = "Var"
   }
@@ -95,7 +138,7 @@ object SimpleTypes {
     val newCtx = ctx + (abs.x -> t1)
 
     newCtx ⊢ abs.e <:> t2 ==>
-      ctx ⊢ abs <:> t | (t =:= t1 --> t2)
+      ctx ⊢ abs <:> t | (t =:= t1 --> t2 | TypeMissmatch(t, t1 --> t2))
 
     override val name = "Abs"
   }
@@ -112,7 +155,7 @@ object SimpleTypes {
     val t2 = TypeVariable()
 
     List(ctx ⊢ app.f <:> t1, ctx ⊢ app.e <:> t2) ==>
-      ctx ⊢ app <:> t | (t1 =:= t2 --> t)
+      ctx ⊢ app <:> t | (t1 =:= t2 --> t | TypeMissmatch(t1, t2 --> t))
 
     override val name = "App"
   }
