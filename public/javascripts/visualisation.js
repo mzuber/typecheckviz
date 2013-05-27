@@ -66,7 +66,7 @@ function showResult(expr, r){
 
 function showError(expr,e){
     $("#result").hide()
-    $("#error").html('<b>Error</b> for Expression '+expr+' : <br>'+e).show()
+    $("#error").html(e).show()
 }
 
 
@@ -90,12 +90,12 @@ function displayCarousel(irs)
         }
         var substitution = ""
         for (var key in irs[i].substitution) {
-            substitution += key + " ~> "+irs[i].substitution[key]+"<br>";
+            substitution += key + " / " + irs[i].substitution[key] + "<br>";
         }
         var content =
             '<div class="text-center"><p><b>Current constraint:</b><br>'+irs[i].current +'</p>'+
-            '<p><b>Result:</b><br>'+result +'</p>'+
-            '<p><b>Substitution:</b><br>'+substitution +'</p>'+
+            '<p><b>Result:</b><br>'+ result +'</p>'+
+            '<p><b>Substitution:</b><br>' + substitution + '</p>'+
             '</div>'
         
         var unsolved = $("<ul>") 

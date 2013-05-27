@@ -61,22 +61,25 @@ object Application extends Controller with ExampleTypeChecker {
       val body: AnyContent = request.body
       val textBody: Option[String] = body.asText
       textBody.map { text =>
-        parse(text) match {
-          case Right(t) =>
+	parse(text) match {
+          case Right(expr) =>
             val tv = TypeVariable()
-            val judgement = Judgement(context, t, tv)
+            val judgement = Judgement(context, expr, tv)
             typeDerivation(judgement).fold(
-              {e => BadRequest("Error in type derivation:" + e.toString)},
-              {s => val irs = traceSolver(flatten(s))
-                    val res = computeType(context,t).fold(l =>
-                      "error"->toJson(l.toString), r=>"result" -> toJson(r.toString))
-                    Ok(toJson(Map("tree" -> treeToJson(s),
-				  "solverSteps" -> toJson(irs.map(IntermediateResultToJson(_))),
-                                   res
-                    )))}
+              { error => BadRequest("Error in type derivation: " + error) },
+              { tree  => val intermediateResults = traceSolver(flatten(tree))
+		         val result = intermediateResults.last match {
+			   case IntermediateResult(_, Left(error), _, _) => "error" -> toJson(error.toString)
+			   case IntermediateResult(_, Right(_), σ, _)    => "result" -> toJson(σ[Type](tv).toString)
+	                 }
+
+		         Ok(toJson(Map("tree" -> treeToJson(tree),
+				       "solverSteps" -> toJson(intermediateResults.map(IntermediateResultToJson(_))),
+                                       result)))
+	      }
             )
-          case Left(s) => BadRequest(s)
-        }
+          case Left(error) => BadRequest(error)
+	}
       }.getOrElse(BadRequest("Expecting text/plain request body"))
   }
 
@@ -95,15 +98,15 @@ object Application extends Controller with ExampleTypeChecker {
                         case (key, value) => (key.toString(),JsString(value.toString()))
                     }).toList) 
 
-  def treeToJson(c: ConstraintTree): JsValue = {
+  def treeToJson(tree: ConstraintTree): JsValue = {
 
-    Json.toJson(Map("rulename" -> toJson(c.rule.name),
-		    "conclusion" -> toJson("Γ ⊢ " + c.rule.conclusion.expr + " : " + c.rule.conclusion.ty),
-                    "conclusionExpr" -> toJson(c.rule.conclusion.expr.toString),
-                    "conclusionTy" -> toJson(c.rule.conclusion.ty.toString),
-		    "context" -> mapToJson(c.rule.conclusion.ctx.ctx), 
-		    "constraints" -> toJson(c.rule.constraints.map(x=>toJson(x.toString))),
-		    "premises" -> toJson(c.children.map(treeToJson(_)))))
+    Json.toJson(Map("rulename"       -> toJson(tree.rule.name),
+		    "conclusion"     -> toJson("Γ ⊢ " + tree.rule.conclusion.expr + " : " + tree.rule.conclusion.ty),
+                    "conclusionExpr" -> toJson(tree.rule.conclusion.expr.toString),
+                    "conclusionTy"   -> toJson(tree.rule.conclusion.ty.toString),
+		    "context"        -> mapToJson(tree.rule.conclusion.ctx.ctx), 
+		    "constraints"    -> toJson(tree.rule.constraints.map(c => toJson(c.constraint.toString))),
+		    "premises"       -> toJson(tree.children.map(treeToJson(_)))))
   }
 
 }

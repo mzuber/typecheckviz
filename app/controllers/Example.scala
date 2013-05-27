@@ -169,7 +169,7 @@ object SimpleTypes {
    */
   case class ConstRule(ctx: Context, n: Const, t: Type) extends Rule {
 
-    Nil ==> ctx ⊢ n <:> t | t =:= BaseType("int")
+    Nil ==> ctx ⊢ n <:> t | (t =:= BaseType("int") | TypeMissmatch(t, BaseType("int")))
 
     override val name = "Const"
   }
