@@ -85,18 +85,21 @@ function displayCarousel(irs)
         else
         {
             for (var key in irs[i].result) {
-                result += key + " ~> "+irs[i].result[key]+"<br>";
+                result += key + " = "+irs[i].result[key]+"<br>";
             }
         }
-        var substitution = ""
-        for (var key in irs[i].substitution) {
-            substitution += key + " / " + irs[i].substitution[key] + "<br>";
-        }
-        var content =
-            '<div class="text-center"><p><b>Current constraint:</b><br>'+irs[i].current +'</p>'+
-            '<p><b>Result:</b><br>'+ result +'</p>'+
-            '<p><b>Substitution:</b><br>' + substitution + '</p>'+
-            '</div>'
+        var substitution = Object.keys(irs[i].substitution).map(function(key) {
+            return key + " -> " +irs[i].substitution[key]
+        })
+
+        step.html("")
+	step.append('<div class="span2"> </div>')
+        var current = $(
+            '<div class="span10"><b>Current constraint: </b>'+irs[i].current +'<p>'+
+            '<p><b>Result:</b> '+ result +'</p>'+
+            '<p><b>Substitution:</b><br>' +'</p>'+
+            '</div>').append(buildSet("o",substitution)) 
+        step.append(current)
         
         var unsolved = $("<ul>") 
         for (var key in irs[i].unsolved) {
@@ -111,7 +114,6 @@ function displayCarousel(irs)
         $('#unsolved').append(divC)
         
         
-        step.html(content)
         carousel.append(step)
 
         var li = $('<li data-target="#myCarousel">').attr('data-slide-to',i)
@@ -122,7 +124,7 @@ function displayCarousel(irs)
 
 function buildTable(t,c)
 {
-    var table = $('<table>');
+    var table = $('<table>').attr("border",1);
     var r1 = $('<tr>');
     var r2 = $('<tr>');
     var cc = c+1;
@@ -140,24 +142,61 @@ function buildTable(t,c)
 
     //rulename
     var name = $('<div data-toogle="tooltip" data-animation="true" title="'+t.constraints+'">').addClass('rulename').text(t.rulename);
-    var context = ""
-    for (var key in t.context) {
-        context += key + " ~> "+t.context[key]+"<br>";
-    }
+    var context = Object.keys(t.context).map(function(key) {
+        return key + " -> " +t.context[key]
+    })
+    
+
     name.click(function(){
         $('#myModal').modal('show')
-        $('.modal-body').html("<b>Context Γ<sub>"+c+"</sub> :</b><br>"+context + "<br><b>Constraints:</b><br>"+t.constraints)
+        $('#myModalLabel').html(t.rulename)
+        $('.modal-body').html("")
+        $('.modal-body').append("<b>Context:</b>")
+        $('.modal-body').append(buildSet("Γ<sub>"+c+"</sub>",context))
+        $('.modal-body').append("<b>Constraints:</b>")
+        $('.modal-body').append(buildSet("c",t.constraints))
+         
 
         
     })
-    var namecell=$('<td>').attr('rowspan','2').appendTo(r1);
+    var namecell = $('<td>').attr('rowspan','2').appendTo(r1);
     namecell.append(name);
     //conclusion
     var conclusion = "Γ<sub>"+c+"</sub> ⊢ "+ t.conclusionExpr + " : " + t.conclusionTy
     $('<td>').attr('colspan',t.premises.length).addClass('conc').html(conclusion).appendTo(r2);
     table.append(r1,r2);
     return table;
+}
 
+function buildSet(name,elems)
+{
+    var set = $('<table>').attr('border','0')
+    for(var i=0; i <elems.length;i++){
+        var tr = $('<tr>')
+        set.append(tr)
+        if(i==0) 
+        {
+            tr.append($('<td>'+name+' = {</td>'))
+        }
+        else
+            tr.append($('<td>'))
+        
+        // if(i+1 == elems.length && i ==0)
+            // $('<td>'+elems[i]+'}</td>').addClass('set').appendTo(tr)
+        if(i+1 == elems.length)
+            $('<td>'+elems[i]+' }</td>').addClass('set').appendTo(tr)
+        else 
+            $('<td>'+elems[i]+',</td>').addClass('set').appendTo(tr)
+    }
+    // closing } on new line
+    // if(elems.length > 1)
+    // {
+    //     var tr = $('<tr>')
+    //     set.append(tr)
+    //     tr.append($('<td style="text-align:right">}</td>'))
+    //     tr.append($('<td>'))
+    // }
+    return set
 }
 
 
