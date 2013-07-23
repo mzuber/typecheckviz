@@ -12,7 +12,8 @@ function eval(s)
                  $('.carousel-indicators').html('')
                  $('#unsolved').html('')
                  $( "#error" ).html('').hide()
-                 $('#tree').html(buildTable(data.tree,0));
+                 displayTree(data.tree)
+                 
                  displayCarousel(data.solverSteps)
                  displayResult(s,data)
              })
@@ -23,6 +24,21 @@ function eval(s)
             $('#result').html('')
             $('#unsolved').html('')
         })
+}
+
+String.prototype.sizeInPx = function() {
+    var o = $('<span>' + this + '</span>')
+        .css({'position': 'absolute', 'float': 'left', 'white-space': 'nowrap', 'visibility': 'hidden' ,'margin':0, 'padding':0})
+        .appendTo($('#tree'))
+    var w = o.width()
+    var h = o.height()
+    var ret = {
+        height: h,
+        width: w
+    };
+
+    o.remove();
+    return ret;
 }
 
 $(document).ready(function(){
@@ -122,55 +138,13 @@ function displayCarousel(irs)
     } 
 }
 
-function buildTable(t,c)
-{
-    var table = $('<table>').attr("border",1);
-    var r1 = $('<tr>');
-    var r2 = $('<tr>');
-    var cc = c+1;
-    for (var i = 0; i < t.premises.length; i++)
-    {
-        var child =  $('<td>').append(buildTable(t.premises[i],cc));
-        cc = cc + 1
-        r1.append(child);
-    }
 
-    if(t.premises.length == 0)
-    {
-        $('<td>').appendTo(r1)
-    }
-
-    //rulename
-    var name = $('<div data-toogle="tooltip" data-animation="true" title="'+t.constraints+'">').addClass('rulename').text(t.rulename);
-    var context = Object.keys(t.context).map(function(key) {
-        return key + " -> " +t.context[key]
-    })
-    
-
-    name.click(function(){
-        $('#myModal').modal('show')
-        $('#myModalLabel').html(t.rulename)
-        $('.modal-body').html("")
-        $('.modal-body').append("<b>Context:</b>")
-        $('.modal-body').append(buildSet("Γ<sub>"+c+"</sub>",context))
-        $('.modal-body').append("<b>Constraints:</b>")
-        $('.modal-body').append(buildSet("c",t.constraints))
-         
-
-        
-    })
-    var namecell = $('<td>').attr('rowspan','2').appendTo(r1);
-    namecell.append(name);
-    //conclusion
-    var conclusion = "Γ<sub>"+c+"</sub> ⊢ "+ t.conclusionExpr + " : " + t.conclusionTy
-    $('<td>').attr('colspan',t.premises.length).addClass('conc').html(conclusion).appendTo(r2);
-    table.append(r1,r2);
-    return table;
-}
+var int = 0;
+function freshInt() { return int++; }
 
 function buildSet(name,elems)
 {
-    var set = $('<table>').attr('border','0')
+    var set = $('<table>')
     for(var i=0; i <elems.length;i++){
         var tr = $('<tr>')
         set.append(tr)
@@ -198,7 +172,6 @@ function buildSet(name,elems)
     // }
     return set
 }
-
 
 
 
