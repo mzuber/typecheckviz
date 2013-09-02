@@ -105,7 +105,7 @@ function displayCarousel(irs)
             }
         }
         var substitution = Object.keys(irs[i].substitution).map(function(key) {
-            return key + " -> " +irs[i].substitution[key]
+            return key + " / " +irs[i].substitution[key]
         })
 
         step.html("")
@@ -114,7 +114,7 @@ function displayCarousel(irs)
             '<div class="span10"><b>Current constraint: </b>'+irs[i].current +'<p>'+
             '<p><b>Result:</b> '+ result +'</p>'+
             '<p><b>Substitution:</b><br>' +'</p>'+
-            '</div>').append(buildSet("o",substitution)) 
+            '</div>').append(buildSet("&#963;",substitution)) 
         step.append(current)
         
         var unsolved = $("<ul>") 
