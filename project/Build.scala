@@ -5,8 +5,8 @@ import play.Project._
 object ApplicationBuild extends Build {
 
   val appName         = "typecheckviz"
-  val appVersion      = "1.0-SNAPSHOT"
-  val buildScalaVersion = "2.10.1"
+  val appVersion      = "0.1"
+  val buildScalaVersion = "2.10.2"
 
   val typechecklibcore = ProjectRef(uri("https://github.com/mzuber/typechecklib.git"), "core")
 
