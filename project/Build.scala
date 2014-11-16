@@ -1,24 +1,21 @@
 import sbt._
-import Keys._
-import play.Project._
+import play.Play.autoImport._
+import PlayKeys._
 
 object ApplicationBuild extends Build {
 
-  val appName         = "typecheckviz"
-  val appVersion      = "0.1"
-  val buildScalaVersion = "2.10.2"
+  val appName = "typecheckviz"
+  val appVersion = "0.1"
+  val buildScalaVersion = "2.10.4"
 
   val typechecklibcore = ProjectRef(uri("https://github.com/mzuber/typechecklib.git"), "core")
 
-  val appDependencies = Seq(
-    // Add your project dependencies here
-    jdbc,
-    anorm
-  )
+  val appDependencies = Seq()
 
 
-  val main = play.Project(appName, appVersion, appDependencies).settings(
-    // Add your own project settings here      
+  val main = Project(appName, file(".")).enablePlugins(play.PlayScala).settings(
+//    version := appVersion,
+//    libraryDependencies ++= appDependencies
   ).dependsOn(typechecklibcore)
 
 }
